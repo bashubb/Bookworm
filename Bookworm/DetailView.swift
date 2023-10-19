@@ -8,6 +8,10 @@
 import SwiftUI
 
 struct DetailView: View {
+    @Environment(\.managedObjectContext) var moc
+    @Environment(\.dismiss) var dismiss
+    @State private var showingDeleteAlert = false
+    
     let book: Book
     
     var body: some View {
@@ -26,16 +30,46 @@ struct DetailView: View {
                     .clipShape(Capsule())
                     .offset(x: -5, y: -5)
             }
+            
             Text(book.author ?? "Uknown Author")
             
             Text(book.review ?? "No review")
-                . padding()
+                .padding()
             
             RatingView(rating: .constant(Int(book.rating)))
                 .font(.largeTitle)
+            
+            Text("Book has been read: \(formatDate())")
+                .foregroundStyle(Color.secondary)
+                .padding()
         }
         .navigationTitle(book.title ?? "Uknown Book")
         .navigationBarTitleDisplayMode(.inline)
+        .alert("Delete Book?", isPresented: $showingDeleteAlert) {
+            Button("Delete", role: .destructive, action: deleteBook)
+            Button("Cancel", role: .cancel){}
+        } message: {
+            Text("Are you sure")
+        }
+        .toolbar {
+            Button{
+                showingDeleteAlert = true
+            } label: {
+                Label("Delete this book", systemImage: "trash")
+            }
+        }
+    }
+    func deleteBook() {
+        moc.delete(book)
+        
+        try? moc.save()
+        dismiss()
+    }
+    
+    func formatDate() -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .long
+        return formatter.string(from: book.date ?? Date())
     }
 }
 
